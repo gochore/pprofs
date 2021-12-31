@@ -9,7 +9,7 @@ import (
 func defaultCapturer() *capturer {
 	return &capturer{
 		profiles: []Profile{
-			CpuProfile{},
+			CpuProfile{Duration: 15 * time.Second},
 			HeapProfile{},
 		},
 		trigger: NewRandomIntervalTrigger(15*time.Second, 2*time.Minute),

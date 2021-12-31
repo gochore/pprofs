@@ -6,21 +6,21 @@ import (
 )
 
 var (
-	autoCapture struct {
+	enabledCapturer struct {
 		sync.Mutex
 		c *capturer
 	}
 )
 
-func EnableAutoCapture(options ...Option) error {
-	autoCapture.Lock()
-	defer autoCapture.Unlock()
+func EnableCapture(options ...Option) error {
+	enabledCapturer.Lock()
+	defer enabledCapturer.Unlock()
 
-	if autoCapture.c != nil {
-		return fmt.Errorf("already enabled auto capture")
+	if enabledCapturer.c != nil {
+		return fmt.Errorf("already enabled capture")
 	}
-	autoCapture.c = newCapturer(options...)
+	enabledCapturer.c = newCapturer(options...)
 
-	go autoCapture.c.run()
+	go enabledCapturer.c.run()
 	return nil
 }

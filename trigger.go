@@ -14,8 +14,8 @@ type Trigger interface {
 
 type RandomIntervalTrigger struct {
 	random   *rand.Rand
-	min, max time.Duration
 	started  bool
+	min, max time.Duration
 }
 
 func NewRandomIntervalTrigger(min time.Duration, max time.Duration) *RandomIntervalTrigger {
@@ -28,9 +28,8 @@ func NewRandomIntervalTrigger(min time.Duration, max time.Duration) *RandomInter
 
 func (t *RandomIntervalTrigger) Wait() error {
 	if !t.started {
-		// 一开始就先触发一次
 		t.started = true
-		return nil
+		return nil // trigger it at the beginning
 	}
 
 	d := t.min + time.Duration(t.random.Int63n(int64(t.max-t.min)))
@@ -40,6 +39,7 @@ func (t *RandomIntervalTrigger) Wait() error {
 
 type PsTrigger struct {
 	interval time.Duration
+	started  bool
 	cpu      float64
 	mem      float64
 }
@@ -53,24 +53,37 @@ func NewPsTrigger(interval time.Duration, cpu float64, mem float64) *PsTrigger {
 }
 
 func (t *PsTrigger) Wait() error {
+	if !(t.cpu > 0 || t.mem > 0) {
+		select {} // block forever
+	}
+
 	p, err := process.NewProcess(int32(os.Getpid()))
 	if err != nil {
 		return err
 	}
 
+	if !t.started {
+		t.started = true
+	} else {
+		time.Sleep(t.interval)
+	}
+
 	for {
-		if cpu, err := p.CPUPercent(); err != nil {
-			return err
-		} else if cpu > t.cpu {
-			return nil
+		if t.cpu > 0 {
+			if cpu, err := p.CPUPercent(); err != nil {
+				return err
+			} else if cpu > t.cpu {
+				return nil
+			}
 		}
 
-		if mem, err := p.MemoryPercent(); err != nil {
-			return err
-		} else if float64(mem) > t.mem {
-			return nil
+		if t.mem > 0 {
+			if mem, err := p.MemoryPercent(); err != nil {
+				return err
+			} else if float64(mem) > t.mem {
+				return nil
+			}
 		}
-
 		time.Sleep(t.interval)
 	}
 }

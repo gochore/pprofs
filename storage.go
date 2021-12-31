@@ -15,7 +15,7 @@ const (
 )
 
 const (
-	pprofFileSuffix = ".pprof"
+	pprofFileSuffix = ".pb.gz"
 )
 
 type Storage interface {
