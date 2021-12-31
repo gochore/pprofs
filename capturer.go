@@ -5,26 +5,26 @@ import (
 	"time"
 )
 
-type Capturer struct {
-	options *options
+type capturer struct {
+	profiles []Profile
+	trigger  Trigger
+	storage  Storage
+	logger   Logger
 }
 
-func NewCapturer(opts ...Option) *Capturer {
-	opt := defaultOptions()
+func newCapturer(opts ...Option) *capturer {
+	c := defaultCapturer()
 	for _, v := range opts {
-		v(opt)
+		v(c)
 	}
-
-	return &Capturer{
-		options: opt,
-	}
+	return c
 }
 
-func (c *Capturer) run() {
-	if profiles := c.options.profiles; len(profiles) > 0 {
+func (c *capturer) run() {
+	if profiles := c.profiles; len(profiles) > 0 {
 		for {
-			if err := c.options.trigger.Wait(); err != nil {
-				c.options.logger.Printf("wait: %v", err)
+			if err := c.trigger.Wait(); err != nil {
+				c.logger.Printf("wait: %v", err)
 				continue
 			}
 
@@ -32,18 +32,18 @@ func (c *Capturer) run() {
 			wg.Add(len(profiles))
 
 			now := time.Now()
-			for _, profile := range c.options.profiles {
+			for _, profile := range c.profiles {
 				go func(p Profile) {
 					defer wg.Done()
 					name := p.Name()
-					w, err := c.options.storage.WriteCloser(name, now)
+					w, err := c.storage.WriteCloser(name, now)
 					if err != nil {
-						c.options.logger.Printf("new writer for %v %v: %v", name, now, err)
+						c.logger.Printf("new writer for %v %v: %v", name, now, err)
 						return
 					}
 					defer w.Close()
 					if err := p.Capture(w); err != nil {
-						c.options.logger.Printf("capture %v at %v: %v", name, now, err)
+						c.logger.Printf("capture %v at %v: %v", name, now, err)
 					}
 				}(profile)
 			}
