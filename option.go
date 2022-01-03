@@ -1,24 +1,6 @@
 package pprofs
 
-import (
-	"io"
-	"log"
-	"time"
-)
-
-func defaultCapturer() *capturer {
-	return &capturer{
-		profiles: []profile{
-			CpuProfile{Duration: 15 * time.Second},
-			heapProfile{},
-		},
-		trigger: NewRandomIntervalTrigger(15*time.Second, 2*time.Minute),
-		storage: NewFileStorageFromEnv(),
-		logger:  log.New(io.Discard, "", 0),
-	}
-}
-
-type Option func(opt *capturer)
+type Option func(c *capturer)
 
 func WithProfiles(profiles ...profile) Option {
 	return func(c *capturer) {
@@ -27,19 +9,19 @@ func WithProfiles(profiles ...profile) Option {
 }
 
 func WithTrigger(trigger Trigger) Option {
-	return func(opt *capturer) {
-		opt.trigger = trigger
+	return func(c *capturer) {
+		c.trigger = trigger
 	}
 }
 
 func WithStorage(storage Storage) Option {
-	return func(opt *capturer) {
-		opt.storage = storage
+	return func(c *capturer) {
+		c.storage = storage
 	}
 }
 
 func WithLogger(logger Logger) Option {
-	return func(opt *capturer) {
-		opt.logger = logger
+	return func(c *capturer) {
+		c.logger = logger
 	}
 }

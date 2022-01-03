@@ -2,6 +2,8 @@ package pprofs
 
 import (
 	"fmt"
+	"io"
+	"log"
 	"sync"
 	"time"
 )
@@ -13,12 +15,27 @@ type capturer struct {
 	logger   Logger
 }
 
+func defaultCapturer() *capturer {
+	return &capturer{
+		profiles: []profile{
+			CpuProfile(),
+			HeapProfile(),
+		},
+		trigger: NewRandomIntervalTrigger(15*time.Second, 2*time.Minute),
+		storage: NewFileStorageFromEnv(),
+		logger:  log.New(io.Discard, "", 0),
+	}
+}
+
 func newCapturer(opts ...Option) (*capturer, error) {
 	c := defaultCapturer()
 	for _, v := range opts {
 		v(c)
 	}
-	return c
+	if err := c.validate(); err != nil {
+		return nil, err
+	}
+	return c, nil
 }
 
 func (c *capturer) run() {
@@ -33,7 +50,7 @@ func (c *capturer) run() {
 			wg.Add(len(profiles))
 
 			now := time.Now()
-			for _, profile := range c.profiles {
+			for _, p := range c.profiles {
 				go func(p profile) {
 					defer wg.Done()
 					name := p.name()
@@ -46,14 +63,14 @@ func (c *capturer) run() {
 					if err := p.capture(w); err != nil {
 						c.logger.Printf("capture %v at %v: %v", name, now, err)
 					}
-				}(profile)
+				}(p)
 			}
 			wg.Wait()
 		}
 	}
 }
 
-func (c *capturer) check() error {
+func (c *capturer) validate() error {
 	if len(c.profiles) == 0 {
 		return fmt.Errorf("%w: empty profiles", ErrInvalidOption)
 	}
