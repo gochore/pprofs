@@ -11,7 +11,9 @@ import (
 )
 
 const (
-	EnvPprofDir = "PPROF_DIR"
+	EnvPprofPrefix = "PPROF_PREFIX"
+	EnvPprofDir    = "PPROF_DIR"
+	EnvPprofTtl    = "PPROF_TTL"
 )
 
 const (
@@ -30,7 +32,7 @@ type FileStorage struct {
 	cleaningM *sync.Mutex
 }
 
-func NewFileStorage(prefix string, dir string, ttl time.Duration) *FileStorage {
+func NewFileStorage(prefix, dir string, ttl time.Duration) *FileStorage {
 	return &FileStorage{
 		prefix:    prefix,
 		dir:       dir,
@@ -41,23 +43,33 @@ func NewFileStorage(prefix string, dir string, ttl time.Duration) *FileStorage {
 }
 
 func NewFileStorageFromEnv() *FileStorage {
-	prefix := os.Args[0]
+	prefix := filepath.Base(os.Args[0])
+	if v := os.Getenv(EnvPprofPrefix); v != "" {
+		prefix = v
+	}
 
 	dir := "/tmp/pprofs"
 	if v := os.Getenv(EnvPprofDir); v != "" {
 		dir = v
 	}
 
-	return NewFileStorage(prefix, dir, 24*time.Hour)
+	ttl := 24 * time.Hour
+	if v := os.Getenv(EnvPprofTtl); v != "" {
+		if t, err := time.ParseDuration(v); err != nil {
+			ttl = t
+		}
+	}
+
+	return NewFileStorage(prefix, dir, ttl)
 }
 
 func (s *FileStorage) WriteCloser(name string, t time.Time) (io.WriteCloser, error) {
-	file := fmt.Sprintf("%s-%s.%s"+pprofFileSuffix, s.prefix, t.Format("20060102T150405"), name)
-	path := filepath.Join(s.dir, file)
 	if err := os.MkdirAll(s.dir, 0755); err != nil {
 		return nil, fmt.Errorf("mkdir %q: %w", s.dir, err)
 	}
 
+	file := fmt.Sprintf("%s-%s.%s"+pprofFileSuffix, s.prefix, t.Format("20060102T150405"), name)
+	path := filepath.Join(s.dir, file)
 	return s.newWriteCloseCleaner(path), nil
 }
 

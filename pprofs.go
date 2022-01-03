@@ -1,14 +1,19 @@
 package pprofs
 
 import (
-	"fmt"
+	"errors"
 	"sync"
+)
+
+var (
+	ErrAlreadyEnabled = errors.New("already enabled")
+	ErrInvalidOption  = errors.New("invalid option")
 )
 
 var (
 	enabledCapturer struct {
 		sync.Mutex
-		c *capturer
+		*capturer
 	}
 )
 
@@ -16,11 +21,15 @@ func EnableCapture(options ...Option) error {
 	enabledCapturer.Lock()
 	defer enabledCapturer.Unlock()
 
-	if enabledCapturer.c != nil {
-		return fmt.Errorf("already enabled capture")
+	if enabledCapturer.capturer != nil {
+		return ErrAlreadyEnabled
 	}
-	enabledCapturer.c = newCapturer(options...)
+	c, err := newCapturer(options...)
+	if err != nil {
+		return err
+	}
+	enabledCapturer.capturer = c
 
-	go enabledCapturer.c.run()
+	go enabledCapturer.capturer.run()
 	return nil
 }

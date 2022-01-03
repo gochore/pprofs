@@ -2,25 +2,64 @@ package pprofs
 
 import (
 	"io"
+	"runtime"
 	"runtime/pprof"
 	"time"
 )
 
-type Profile interface {
-	Name() string
-	Capture(w io.Writer) (err error)
+func CpuProfile() cpuProfile {
+	return cpuProfile{
+		duration: 15 * time.Second,
+	}
 }
 
-type CpuProfile struct {
-	Duration time.Duration // 15 seconds by default
+func (p cpuProfile) WithDuration(d time.Duration) cpuProfile {
+	p.duration = d
+	return p
 }
 
-func (p CpuProfile) Name() string {
+func HeapProfile() heapProfile {
+	return heapProfile{}
+}
+
+func MutexProfile() mutexProfile {
+	return mutexProfile{}
+}
+
+func BlockProfile() blockProfile {
+	return blockProfile{
+		rate: 1,
+	}
+}
+
+func (p blockProfile) WithRate(rate int) blockProfile {
+	p.rate = rate
+	return p
+}
+
+func GoroutineProfile() goroutineProfile {
+	return goroutineProfile{}
+}
+
+func ThreadcreateProfile() threadcreateProfile {
+	return threadcreateProfile{}
+}
+
+type profile interface {
+	name() string
+	capture(io.Writer) error
+}
+
+type cpuProfile struct {
+	duration time.Duration
+}
+
+func (p cpuProfile) name() string {
 	return "cpu"
 }
 
-func (p CpuProfile) Capture(w io.Writer) error {
-	dur := p.Duration
+func (p cpuProfile) capture(w io.Writer) error {
+	dur := p.duration
 	if dur <= 0 {
 		dur = 15 * time.Second
 	}
@@ -33,18 +72,59 @@ func (p CpuProfile) Capture(w io.Writer) error {
 	return nil
 }
 
-type HeapProfile struct{}
+type heapProfile struct{}
 
-func (p HeapProfile) Name() string {
+func (p heapProfile) name() string {
 	return "heap"
 }
 
-func (p HeapProfile) Capture(w io.Writer) error {
-	return captureProfile(w, p.Name())
+func (p heapProfile) capture(w io.Writer) error {
+	return captureProfile(w, p.name())
+}
+
+type mutexProfile struct{}
+
+func (p mutexProfile) name() string {
+	return "mutex"
+}
+
+func (p mutexProfile) capture(w io.Writer) error {
+	return captureProfile(w, p.name())
+}
+
+type blockProfile struct {
+	rate int
+}
+
+func (p blockProfile) name() string {
+	return "block"
+}
+
+func (p blockProfile) capture(w io.Writer) error {
+	runtime.SetBlockProfileRate(p.rate)
+	return captureProfile(w, p.name())
+}
+
+type goroutineProfile struct{}
+
+func (p goroutineProfile) name() string {
+	return "goroutine"
+}
+
+func (p goroutineProfile) capture(w io.Writer) error {
+	return captureProfile(w, p.name())
+}
+
+type threadcreateProfile struct{}
+
+func (p threadcreateProfile) name() string {
+	return "threadcreate"
+}
+
+func (p threadcreateProfile) capture(w io.Writer) error {
+	return captureProfile(w, p.name())
 }
 
 func captureProfile(w io.Writer, name string) error {
 	return pprof.Lookup(name).WriteTo(w, 0)
 }
-
-// TODO support more profiles
