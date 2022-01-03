@@ -8,9 +8,9 @@ import (
 
 func defaultCapturer() *capturer {
 	return &capturer{
-		profiles: []Profile{
+		profiles: []profile{
 			CpuProfile{Duration: 15 * time.Second},
-			HeapProfile{},
+			heapProfile{},
 		},
 		trigger: NewRandomIntervalTrigger(15*time.Second, 2*time.Minute),
 		storage: NewFileStorageFromEnv(),
@@ -20,7 +20,7 @@ func defaultCapturer() *capturer {
 
 type Option func(opt *capturer)
 
-func WithProfiles(profiles ...Profile) Option {
+func WithProfiles(profiles ...profile) Option {
 	return func(c *capturer) {
 		c.profiles = profiles
 	}
