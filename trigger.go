@@ -9,6 +9,27 @@ type Trigger interface {
 	Wait() error
 }
 
+type IntervalTrigger struct {
+	started  bool
+	interval time.Duration
+}
+
+func NewIntervalTrigger(interval time.Duration) *IntervalTrigger {
+	return &IntervalTrigger{
+		interval: interval,
+	}
+}
+
+func (t *IntervalTrigger) Wait() error {
+	if !t.started {
+		t.started = true
+		return nil // trigger it at the beginning
+	}
+
+	time.Sleep(t.interval)
+	return nil
+}
+
 type RandomIntervalTrigger struct {
 	random   *rand.Rand
 	started  bool
@@ -29,7 +50,6 @@ func (t *RandomIntervalTrigger) Wait() error {
 		return nil // trigger it at the beginning
 	}
 
-	d := t.min + time.Duration(t.random.Int63n(int64(t.max-t.min)))
-	time.Sleep(d)
+	time.Sleep(t.min + time.Duration(t.random.Int63n(int64(t.max-t.min))))
 	return nil
 }

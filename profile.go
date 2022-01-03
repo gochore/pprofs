@@ -14,9 +14,7 @@ func CpuProfile() cpuProfile {
 }
 
 func (p cpuProfile) WithDuration(d time.Duration) cpuProfile {
-	if d >= 0 {
-		p.duration = d
-	}
+	p.duration = d
 	return p
 }
 
