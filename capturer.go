@@ -39,34 +39,32 @@ func newCapturer(opts ...Option) (*capturer, error) {
 }
 
 func (c *capturer) run() {
-	if profiles := c.profiles; len(profiles) > 0 {
-		for {
-			if err := c.trigger.Wait(); err != nil {
-				c.logger.Printf("wait: %v", err)
-				continue
-			}
-
-			wg := &sync.WaitGroup{}
-			wg.Add(len(profiles))
-
-			now := time.Now()
-			for _, p := range c.profiles {
-				go func(p profile) {
-					defer wg.Done()
-					name := p.name()
-					w, err := c.storage.WriteCloser(name, now)
-					if err != nil {
-						c.logger.Printf("new writer for %v %v: %v", name, now, err)
-						return
-					}
-					defer w.Close()
-					if err := p.capture(w); err != nil {
-						c.logger.Printf("capture %v at %v: %v", name, now, err)
-					}
-				}(p)
-			}
-			wg.Wait()
+	for {
+		if err := c.trigger.Wait(); err != nil {
+			c.logger.Printf("wait: %v", err)
+			continue
 		}
+
+		wg := &sync.WaitGroup{}
+		wg.Add(len(c.profiles))
+
+		now := time.Now()
+		for _, p := range c.profiles {
+			go func(p profile) {
+				defer wg.Done()
+				name := p.name()
+				w, err := c.storage.WriteCloser(name, now)
+				if err != nil {
+					c.logger.Printf("new writer for %v %v: %v", name, now, err)
+					return
+				}
+				defer w.Close()
+				if err := p.capture(w); err != nil {
+					c.logger.Printf("capture %v at %v: %v", name, now, err)
+				}
+			}(p)
+		}
+		wg.Wait()
 	}
 }
 

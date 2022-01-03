@@ -43,7 +43,7 @@ func NewFileStorage(prefix, dir string, ttl time.Duration) *FileStorage {
 }
 
 func NewFileStorageFromEnv() *FileStorage {
-	prefix := os.Args[0]
+	prefix := filepath.Base(os.Args[0])
 	if v := os.Getenv(EnvPprofPrefix); v != "" {
 		prefix = v
 	}
