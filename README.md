@@ -37,7 +37,7 @@ Or use options:
 ```go
 func main() {
 	if err := pprofs.EnableCapture(
-		pprofs.WithStorage(pprofs.NewFileStorage("prefix", "`~/somewhere`", time.Hour)),
+		pprofs.WithStorage(pprofs.NewFileStorage("prefix", "~/somewhere", time.Hour)),
 	); err != nil {
 		panic(err)
 	}
