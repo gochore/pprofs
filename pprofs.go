@@ -17,6 +17,7 @@ var (
 	}
 )
 
+// EnableCapture will capture the given profiles periodically.
 func EnableCapture(options ...Option) error {
 	enabledCapturer.Lock()
 	defer enabledCapturer.Unlock()
