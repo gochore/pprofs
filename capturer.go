@@ -74,6 +74,9 @@ func (c *capturer) validate() error {
 	}
 	exists := map[string]struct{}{}
 	for _, v := range c.profiles {
+		if v == nil {
+			return fmt.Errorf("%w: nil profile", ErrInvalidOption)
+		}
 		name := v.name()
 		if _, ok := exists[name]; ok {
 			return fmt.Errorf("%w: duplicated profile %v", ErrInvalidOption, name)
