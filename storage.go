@@ -20,10 +20,13 @@ const (
 	pprofFileSuffix = ".pb.gz"
 )
 
+// Storage is an abstraction of storage output.
 type Storage interface {
+	// WriteCloser should return an io.WriteCloser according to the profile name and current time.
 	WriteCloser(name string, t time.Time) (io.WriteCloser, error)
 }
 
+// FileStorage stores the profile results to file with automatic cleaning.
 type FileStorage struct {
 	prefix    string
 	dir       string
@@ -32,6 +35,10 @@ type FileStorage struct {
 	cleaningM *sync.Mutex
 }
 
+// NewFileStorage return a FileStorage,
+// prefix indicates the prefix of the files,
+// dir indicates where to save the files,
+// ttl indicates the time-to-live of the files.
 func NewFileStorage(prefix, dir string, ttl time.Duration) *FileStorage {
 	return &FileStorage{
 		prefix:    prefix,
@@ -42,6 +49,8 @@ func NewFileStorage(prefix, dir string, ttl time.Duration) *FileStorage {
 	}
 }
 
+// NewFileStorageFromEnv return a FileStorage,
+// it read arguments from environment variables.
 func NewFileStorageFromEnv() *FileStorage {
 	prefix := filepath.Base(os.Args[0])
 	if v := os.Getenv(EnvPprofPrefix); v != "" {
@@ -63,6 +72,7 @@ func NewFileStorageFromEnv() *FileStorage {
 	return NewFileStorage(prefix, dir, ttl)
 }
 
+// WriteCloser implements Storage.
 func (s *FileStorage) WriteCloser(name string, t time.Time) (io.WriteCloser, error) {
 	if err := os.MkdirAll(s.dir, 0755); err != nil {
 		return nil, fmt.Errorf("mkdir %q: %w", s.dir, err)
