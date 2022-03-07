@@ -57,7 +57,7 @@ func NewFileStorageFromEnv() *FileStorage {
 		prefix = v
 	}
 
-	dir := "/tmp/pprofs"
+	dir := filepath.Join(os.TempDir(), "pprofs")
 	if v := os.Getenv(EnvPprofDir); v != "" {
 		dir = v
 	}
